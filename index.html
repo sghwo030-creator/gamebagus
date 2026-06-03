@@ -1,70 +1,159 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Website Anak Muda</title>
-
+<title>Infinite Games - Jump</title>
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Segoe UI',sans-serif;
-}
-
 body{
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:linear-gradient(135deg,#6a11cb,#2575fc);
+    margin:0;
+    overflow:hidden;
+    background:#111827;
 }
-
-.card{
-    width:350px;
-    padding:30px;
-    text-align:center;
-    border-radius:25px;
-    background:rgba(255,255,255,0.1);
-    backdrop-filter:blur(15px);
-    color:white;
-    box-shadow:0 8px 32px rgba(0,0,0,0.2);
-}
-
-h1{
-    margin-bottom:10px;
-    font-size:32px;
-}
-
-p{
-    opacity:0.8;
-    margin-bottom:25px;
-}
-
-button{
-    border:none;
-    padding:12px 25px;
-    border-radius:50px;
-    background:white;
-    color:#2575fc;
-    font-weight:bold;
-    cursor:pointer;
-    transition:0.3s;
-}
-
-button:hover{
-    transform:scale(1.1);
+canvas{
+    display:block;
+    margin:auto;
+    background:linear-gradient(#0ea5e9,#1e293b);
 }
 </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>🚀 Halo!</h1>
-    <p>Website modern dengan gaya anak muda.</p>
-    <button>Klik Aku</button>
-</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 1000;
+canvas.height = 600;
+
+let score = 0;
+
+const player = {
+    x:100,
+    y:300,
+    w:40,
+    h:40,
+    vx:0,
+    vy:0
+};
+
+const gravity = 0.7;
+const jumpPower = -15;
+
+let platforms = [];
+
+function createPlatform(x,y,w){
+    platforms.push({
+        x,y,w,h:20
+    });
+}
+
+for(let i=0;i<15;i++){
+    createPlatform(i*250,Math.random()*250+250,150);
+}
+
+const keys = {};
+
+addEventListener("keydown",e=>{
+    keys[e.key]=true;
+
+    if((e.key===" " || e.key==="ArrowUp") && player.vy===0){
+        player.vy=jumpPower;
+    }
+});
+
+addEventListener("keyup",e=>{
+    keys[e.key]=false;
+});
+
+function update(){
+
+    if(keys["ArrowLeft"] || keys["a"])
+        player.vx=-6;
+    else if(keys["ArrowRight"] || keys["d"])
+        player.vx=6;
+    else
+        player.vx=0;
+
+    player.x+=player.vx;
+    player.vy+=gravity;
+    player.y+=player.vy;
+
+    let grounded=false;
+
+    for(let p of platforms){
+
+        if(
+            player.x+player.w>p.x &&
+            player.x<p.x+p.w &&
+            player.y+player.h>p.y &&
+            player.y+player.h-player.vy<=p.y
+        ){
+            player.y=p.y-player.h;
+            player.vy=0;
+            grounded=true;
+        }
+    }
+
+    if(!grounded && player.vy===0)
+        player.vy=1;
+
+    if(player.x>500){
+        let move=player.x-500;
+        player.x=500;
+
+        for(let p of platforms)
+            p.x-=move;
+
+        score+=Math.floor(move);
+
+        let last=platforms[platforms.length-1];
+
+        while(last.x<1500){
+            createPlatform(
+                last.x+200+Math.random()*150,
+                Math.random()*250+250,
+                100+Math.random()*120
+            );
+            last=platforms[platforms.length-1];
+        }
+
+        platforms=platforms.filter(p=>p.x+p.w>-100);
+    }
+
+    if(player.y>canvas.height){
+        alert("Game Over!\nSkor: "+score);
+        location.reload();
+    }
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="white";
+    ctx.font="30px Arial";
+    ctx.fillText("Score: "+score,20,40);
+
+    ctx.fillStyle="#22c55e";
+
+    for(let p of platforms){
+        ctx.fillRect(p.x,p.y,p.w,p.h);
+    }
+
+    ctx.fillStyle="#f59e0b";
+    ctx.fillRect(player.x,player.y,player.w,player.h);
+}
+
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
 
 </body>
 </html>
